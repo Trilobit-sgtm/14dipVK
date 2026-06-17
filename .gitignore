@@ -1,0 +1,4 @@
+*.db
+.gocache/
+.tmp/
+*.exe
