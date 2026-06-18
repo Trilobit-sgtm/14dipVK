@@ -16,9 +16,8 @@ type tasksResp struct {
 func tasksHandler(w http.ResponseWriter, r *http.Request) {
 	tasks, err := db.Tasks(50)
 	if err != nil {
-		writeError(w, "ошибка получения списка задач: "+err.Error())
+		writeError(w, http.StatusInternalServerError, "ошибка получения списка задач: "+err.Error())
 		return
 	}
-
 	writeJSON(w, tasksResp{Tasks: tasks})
 }

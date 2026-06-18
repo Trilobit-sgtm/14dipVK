@@ -19,6 +19,8 @@ func main() {
 	if err := db.Init(dbFile); err != nil {
 		log.Fatalf("не удалось инициализировать БД: %v", err)
 	}
+	// гарантируем закрытие соединения с БД при завершении программы
+	defer db.Close()
 
 	// запускаем веб-сервер
 	server.Run()

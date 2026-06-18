@@ -13,9 +13,9 @@ func writeJSON(w http.ResponseWriter, data any) {
 	}
 }
 
-// writeError возвращает JSON с полем error и HTTP-статусом 400.
-func writeError(w http.ResponseWriter, msg string) {
+// writeError возвращает JSON с полем error и переданным HTTP-статусом.
+func writeError(w http.ResponseWriter, code int, msg string) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }

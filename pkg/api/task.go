@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -22,7 +23,7 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		deleteTaskHandler(w, r)
 	default:
-		writeError(w, fmt.Sprintf("метод %s не поддерживается", r.Method))
+		writeError(w, http.StatusMethodNotAllowed, fmt.Sprintf("метод %s не поддерживается", r.Method))
 	}
 }
 
@@ -31,21 +32,18 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
 func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeError(w, "ошибка разбора JSON: "+err.Error())
+		writeError(w, http.StatusBadRequest, "ошибка разбора JSON: "+err.Error())
 		return
 	}
-
 	if err := validateTask(&task); err != nil {
-		writeError(w, err.Error())
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	id, err := db.AddTask(&task)
 	if err != nil {
-		writeError(w, "ошибка добавления задачи: "+err.Error())
+		writeError(w, http.StatusInternalServerError, "ошибка добавления задачи: "+err.Error())
 		return
 	}
-
 	writeJSON(w, map[string]string{"id": fmt.Sprint(id)})
 }
 
@@ -54,20 +52,18 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
-		writeError(w, "не указан идентификатор задачи")
+		writeError(w, http.StatusBadRequest, "не указан идентификатор задачи")
 		return
 	}
-
 	task, err := db.GetTask(id)
-	if err == sql.ErrNoRows {
-		writeError(w, "задача не найдена")
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "задача не найдена")
 		return
 	}
 	if err != nil {
-		writeError(w, "ошибка получения задачи: "+err.Error())
+		writeError(w, http.StatusInternalServerError, "ошибка получения задачи: "+err.Error())
 		return
 	}
-
 	writeJSON(w, task)
 }
 
@@ -76,25 +72,21 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeError(w, "ошибка разбора JSON: "+err.Error())
+		writeError(w, http.StatusBadRequest, "ошибка разбора JSON: "+err.Error())
 		return
 	}
-
 	if task.ID == "" {
-		writeError(w, "не указан идентификатор задачи")
+		writeError(w, http.StatusBadRequest, "не указан идентификатор задачи")
 		return
 	}
-
 	if err := validateTask(&task); err != nil {
-		writeError(w, err.Error())
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	if err := db.UpdateTask(&task); err != nil {
-		writeError(w, err.Error())
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
 	writeJSON(w, map[string]string{})
 }
 
@@ -103,15 +95,13 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
-		writeError(w, "не указан идентификатор задачи")
+		writeError(w, http.StatusBadRequest, "не указан идентификатор задачи")
 		return
 	}
-
 	if err := db.DeleteTask(id); err != nil {
-		writeError(w, err.Error())
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
 	writeJSON(w, map[string]string{})
 }
 
